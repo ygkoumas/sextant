@@ -9,6 +9,10 @@ lon: chosen position longitude
 zenith_distance: distance calculated from the sextant reading after correcting for all errors to get the altitude Hc, and converting to distance by using the formula: distance = 90 - Hc
 """
 
+COOR_STEP = 0.01
+SMALL_COOR_STEP = 0.001
+DIFF_TOLERANCE = 1/60
+
 def float_range(start, stop, step):
     while start < stop:
         yield start
@@ -55,24 +59,32 @@ def find_potential_points(dec, gha, lat, lon, zenith_distance):
 
 	pot_lat = -90
 	while pot_lat <= 90:
-		pot_lat += 0.1
+		pot_lat += COOR_STEP
 		pot_distance = true_zenith_distance(dec, gha, pot_lat, lon)
-		if abs(pot_distance - zenith_distance) <= 1/60:
-			result.append([pot_lat, lon])
-			while abs(pot_distance - zenith_distance) <= 1/60:
-				pot_lat += 0.01
-				pot_distance = true_zenith_distance(dec, gha, pot_lat, lon)
+		neighbor_results = []
+		while abs(pot_distance - zenith_distance) <= DIFF_TOLERANCE:
+			neighbor_results.append([pot_lat, lon])
+			pot_lat += SMALL_COOR_STEP
+			pot_distance = true_zenith_distance(dec, gha, pot_lat, lon)
+		if len(neighbor_results) > 0:
+			closest_neighbor_result = min(neighbor_results, key=lambda r: abs(true_zenith_distance(dec, gha, r[0], r[1]) - zenith_distance))
+			result.append(closest_neighbor_result)
 
 
 	pot_lon = -180
 	while pot_lon <= 180:
-		pot_lon += 0.01
+		pot_lon += COOR_STEP
 		pot_distance = true_zenith_distance(dec, gha, lat, pot_lon)
-		if abs(pot_distance - zenith_distance) <= 1/60:
-			result.append([lat, pot_lon])
-			while abs(pot_distance - zenith_distance) <= 1/60:
-				pot_lon += 0.01
-				pot_distance = true_zenith_distance(dec, gha, lat, pot_lon)
+		neighbor_results = []
+		while abs(pot_distance - zenith_distance) <= DIFF_TOLERANCE:
+			neighbor_results.append([lat, pot_lon])
+			pot_lon += SMALL_COOR_STEP
+			pot_distance = true_zenith_distance(dec, gha, lat, pot_lon)
+		if len(neighbor_results) > 0:
+			closest_neighbor_result = min(neighbor_results, key=lambda r: abs(true_zenith_distance(dec, gha, r[0], r[1]) - zenith_distance))
+			result.append(closest_neighbor_result)
+
+
 	formated_result = [[format_angle(p[0]), format_angle(p[1])] for p in result]
 	for fr in formated_result:
 		print("lat: " + fr[0] + ", lon: " + fr[1])
