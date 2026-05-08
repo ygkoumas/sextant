@@ -6,7 +6,7 @@ dec: declination of the celestial body
 gha: Greenwich Hour Angle of the celestial body
 lat: chosen position latitude
 lon: chosen position longitude
-zenith_distance: distance calculated from the sextant reading after correcting for all errors to get the altitude Hc, and converting to distance by using the formula: distance = 90 - Hc
+zenith_distance: distance calculated from the sextant reading after correcting for all errors to get the altitude Ho, and converting to distance by using the formula: distance = 90 - Ho
 """
 
 COOR_STEP = 0.01
@@ -42,7 +42,7 @@ def true_zenith_distance(dec, gha, lat, lon):
 
 def format_angle(angle):
 	degrees = int(angle)
-	minutes = abs(round((angle - degrees) * 60, 2))
+	minutes = abs(round((angle - degrees) * 60, 1))
 	return "{degrees}° {minutes}'".format( degrees=degrees, minutes=minutes)
 
 def find_azimuth(dec, gha, lat, lon, zenith_distance):
@@ -55,7 +55,11 @@ def find_potential_points(dec, gha, lat, lon, zenith_distance):
 	lat = lat[0] + lat[1]/60
 	lon = lon[0] + lon[1]/60
 	result = []
-	print("distance calculated: " + format_angle(true_zenith_distance(dec, gha, lat, lon)))
+
+
+	answer = "distance calculated (90 - Hc): " + format_angle(true_zenith_distance(dec, gha, lat, lon)) + "\n"
+	answer += "azimuth (Zn): " + str(find_azimuth(dec, gha, lat, lon, zenith_distance)) + "\n"
+
 
 	pot_lat = -90
 	while pot_lat <= 90:
@@ -66,6 +70,7 @@ def find_potential_points(dec, gha, lat, lon, zenith_distance):
 			neighbor_results.append([pot_lat, lon])
 			pot_lat += SMALL_COOR_STEP
 			pot_distance = true_zenith_distance(dec, gha, pot_lat, lon)
+		# from the neighboring points pick up the one which is closer to azymuth distance. It is the best estimate from the list.
 		if len(neighbor_results) > 0:
 			closest_neighbor_result = min(neighbor_results, key=lambda r: abs(true_zenith_distance(dec, gha, r[0], r[1]) - zenith_distance))
 			result.append(closest_neighbor_result)
@@ -80,17 +85,21 @@ def find_potential_points(dec, gha, lat, lon, zenith_distance):
 			neighbor_results.append([lat, pot_lon])
 			pot_lon += SMALL_COOR_STEP
 			pot_distance = true_zenith_distance(dec, gha, lat, pot_lon)
+		# from the neighboring points pick up the one which is closer to azymuth distance. It is the best estimate from the list.
 		if len(neighbor_results) > 0:
 			closest_neighbor_result = min(neighbor_results, key=lambda r: abs(true_zenith_distance(dec, gha, r[0], r[1]) - zenith_distance))
 			result.append(closest_neighbor_result)
 
+	# display first the points that are closer to the chosen position, as they are more likely to be usefull for the navigator
+	result.sort(key=lambda r: true_zenith_distance(lat, -lon, r[0], r[1]))
 
 	formated_result = [[format_angle(p[0]), format_angle(p[1])] for p in result]
+
+	answer += "\nPoins that mach azimuth intercept:\n"
 	for fr in formated_result:
-		print("lat: " + fr[0] + ", lon: " + fr[1])
+		answer += "lat: " + fr[0] + ", lon: " + fr[1] + "\n"
 	
-	print("azimuth: " + str(find_azimuth(dec, gha, lat, lon, zenith_distance)))
-	return formated_result
+	return answer
 
 
 
