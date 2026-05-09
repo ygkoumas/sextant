@@ -54,6 +54,7 @@ def find_potential_points(dec, gha, lat, lon, zenith_distance):
 	gha = gha[0] + gha[1]/60
 	lat = lat[0] + lat[1]/60
 	lon = lon[0] + lon[1]/60
+	zenith_distance = zenith_distance[0] + zenith_distance[1]/60
 	result = []
 
 
