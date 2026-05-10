@@ -2,11 +2,11 @@ import math as m
 
 """
 function signatures:
-dec: declination of the celestial body
+dec: declination of the celestial body. Positive for North. Negative for South
 gha: Greenwich Hour Angle of the celestial body
-lat: chosen position latitude
-lon: chosen position longitude
-zenith_distance: distance calculated from the sextant reading after correcting for all errors to get the altitude Ho, and converting to distance by using the formula: distance = 90 - Ho
+lat: chosen position latitude. Positive for North. Negative for South
+lon: chosen position longitude. Positive for East. Negative for West
+zenith_distance: true zenith distance. In other words (90 minus true altitude) or (90 - Ho)
 """
 
 COOR_STEP = 0.01
