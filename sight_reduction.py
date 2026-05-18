@@ -13,10 +13,6 @@ COOR_STEP = 0.01
 SMALL_COOR_STEP = 0.001
 DIFF_TOLERANCE = 1/60
 
-def float_range(start, stop, step):
-    while start < stop:
-        yield start
-        start += step
 
 def cos(x):
 	return m.cos(x*m.pi/180.0)
@@ -41,20 +37,36 @@ def true_zenith_distance(dec, gha, lat, lon):
 	return result
 
 def format_angle(angle):
-	degrees = int(angle)
-	minutes = abs(round((angle - degrees) * 60, 1))
-	return "{degrees}° {minutes}'".format( degrees=degrees, minutes=minutes)
+    assert angle >= 0
+    degrees = int(angle)
+    minutes = abs(round((angle - degrees) * 60, 1))
+    return "{degrees}° {minutes}'".format( degrees=degrees, minutes=minutes)
 
 def find_azimuth(dec, gha, lat, lon, zenith_distance):
 	azimuth = m.asin(sin(gha-lon)*cos(dec)/cos(90-zenith_distance))*180/m.pi
 	return 360-azimuth if lat > 0 else 180+azimuth
 
-def find_potential_points(dec, gha, lat, lon, zenith_distance):
-	dec = dec[0] + dec[1]/60
-	gha = gha[0] + gha[1]/60
-	lat = lat[0] + lat[1]/60
-	lon = lon[0] + lon[1]/60
-	zenith_distance = zenith_distance[0] + zenith_distance[1]/60
+def find_potential_points(dec_v, gha_v, lat_v, lon_v, zenith_distance_v):
+	sign_map = {
+	  'N': 1,
+	  'S': -1,
+	  'E': 1,
+	  'W': -1,
+	}
+
+	dec = dec_v[0] + dec_v[1]/60
+	dec * sign_map[dec_v[2]]
+
+	gha = gha_v[0] + gha_v[1]/60
+
+	lat = lat_v[0] + lat_v[1]/60
+	lat *= sign_map[lat_v[2]]
+
+	lon = lon_v[0] + lon_v[1]/60
+	lon *= sign_map[lon_v[2]]
+
+	zenith_distance = zenith_distance_v[0] + zenith_distance_v[1]/60
+
 	result = []
 
 
@@ -94,11 +106,11 @@ def find_potential_points(dec, gha, lat, lon, zenith_distance):
 	# display first the points that are closer to the chosen position, as they are more likely to be usefull for the navigator
 	result.sort(key=lambda r: true_zenith_distance(lat, -lon, r[0], r[1]))
 
-	formated_result = [[format_angle(p[0]), format_angle(p[1])] for p in result]
+	formated_result = [[format_angle(abs(p[0])) , 'N' if p[0]>= 0 else 'S', format_angle(abs(p[1])), 'E' if p[1]>=0 else 'W' ] for p in result]
 
 	answer += "\nPoins that mach azimuth intercept:\n"
 	for fr in formated_result:
-		answer += "lat: " + fr[0] + ", lon: " + fr[1] + "\n"
+		answer += "lat: " + fr[0] + fr[1] + ", lon: " + fr[2] + fr[3] + "\n"
 	
 	return answer
 
